@@ -84,23 +84,31 @@ class RoslaunchDeps(object):
     def __str__(self):
         return "nodes: %s\nincludes: %s\npkgs: %s"%(str(self.nodes), str(self.includes), str(self.pkgs))
 
+def _tag_has_attribute(tag, attribute):
+    if hasattr(tag.attributes, '__contains__'):
+        # Python 3's minidom supports the in operator.
+        return attribute in tag.attributes
+    else:
+        # Python 2 uses a named method instead.
+        return tag.attributes.has_key(attribute)
+
 def _get_arg_value(tag, context):
     name = tag.attributes['name'].value
-    if 'value' in tag.attributes:
+    if _tag_has_attribute(tag, 'value'):
         return resolve_args(tag.attributes['value'].value, context)
     elif name in context['arg']:
         return context['arg'][name]
-    elif 'default' in tag.attributes:
+    elif _tag_has_attribute(tag, 'default'):
         return resolve_args(tag.attributes['default'].value, context)
     else:
         raise RoslaunchDepsException("No value for arg [%s]"%(name))
 
 def _check_ifunless(tag, context):
-    if 'if' in tag.attributes:
+    if _tag_has_attribute(tag, 'if'):
         val = resolve_args(tag.attributes['if'].value, context)
         if not convert_value(val, 'bool'):
             return False
-    elif 'unless' in tag.attributes:
+    elif _tag_has_attribute(tag, 'unless'):
         val = resolve_args(tag.attributes['unless'].value, context)
         if convert_value(val, 'bool'):
             return False
